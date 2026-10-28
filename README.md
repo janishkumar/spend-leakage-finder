@@ -88,7 +88,7 @@ make setup          # uv sync
 make run            # download the latest snapshot (skipped if unchanged) and run everything (~2 min)
 make report         # docs/findings.md + reports/review_pack.xlsx
 make app            # Streamlit review app on :8501
-make test           # 51 tests, no network, synthetic fixtures
+make test           # 52 tests, no network, synthetic fixtures
 ```
 
 The **Excel review pack** is what a reviewer actually works from. It contains the ranked candidates with both sides of every pair, a `reviewer_decision` column, vendor-master duplicates, fuzzy merges for sign-off, split-purchase windows, Benford by department, and the ROI sensitivity table.
@@ -97,7 +97,7 @@ To run it on a different ledger, write one `standardise_<source>()` in `src/leak
 
 ## Engineering
 
-- **CI** (GitHub Actions): ruff, 51 pytest tests with a coverage gate (94% today), dependency audit, gitleaks secret scan, and a Docker build.
+- **CI** (GitHub Actions): ruff, 52 pytest tests with a coverage gate (94% today), dependency audit, gitleaks secret scan, and a Docker build.
 - **CD**: once CI passes on `main`, the image is published to GHCR, tagged by commit SHA and `latest`.
 - **Reproducible runs**: candidate order is pinned and every seed is fixed. Two consecutive full runs produce identical `metrics.json`.
 - **No hand-typed numbers**: `findings.md`, the review pack and the app all read the same `metrics.json` / `leakage.duckdb`.

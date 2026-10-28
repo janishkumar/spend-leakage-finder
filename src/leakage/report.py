@@ -13,6 +13,8 @@ from pathlib import Path
 import duckdb
 import pandas as pd
 
+from leakage.vendors import is_org
+
 
 @dataclass(frozen=True)
 class RoiAssumptions:
@@ -59,6 +61,16 @@ def sensitivity(queue: pd.DataFrame, a: RoiAssumptions) -> pd.DataFrame:
         r = roi(queue, RoiAssumptions(a.top_k, rate, a.minutes_per_review, a.hourly_rate))
         rows.append({"confirmation_rate": rate, **r})
     return pd.DataFrame(rows)
+
+
+def public_name(name: str) -> str:
+    """Mask payees who look like private individuals in anything published.
+
+    The ledger is public, but a findings memo that puts a person's name next to
+    "suspected duplicate payment" isn't fair to them. Organisations stay named.
+    The Excel pack, which a client's reviewers use internally, keeps full names.
+    """
+    return name if is_org(name) else "[individual payee]"
 
 
 def _money(x: float) -> str:
@@ -217,8 +229,8 @@ def write_findings(out_dir: Path, path: Path, a: RoiAssumptions | None = None) -
         "|---|---|---|---|---|---:|",
     ]
     for r_ in top10.itertuples(index=False):
-        names = r_.a_vendor_name_raw if r_.a_vendor_name_raw == r_.b_vendor_name_raw \
-            else f"{r_.a_vendor_name_raw} / {r_.b_vendor_name_raw}"
+        a_name, b_name = public_name(r_.a_vendor_name_raw), public_name(r_.b_vendor_name_raw)
+        names = a_name if a_name == b_name else f"{a_name} / {b_name}"
         lines.append(
             f"| {names} | {pd.Timestamp(r_.a_check_date).date()} / "
             f"{pd.Timestamp(r_.b_check_date).date()} | ${r_.a_amount:,.2f} / "
@@ -250,8 +262,9 @@ def write_findings(out_dir: Path, path: Path, a: RoiAssumptions | None = None) -
         "vendor's own history (transfer payees scoped out). The largest deviations, usually "
         "one-off capital or settlement payments worth a look:",
         "",
-        *[f"  - {s.canonical_name}: {_money(s.amount)} in {pd.Timestamp(s.month):%b %Y} "
-          f"(typical month {_money(s.median)})" for s in spikes.itertuples(index=False)],
+        *[f"  - {public_name(s.canonical_name)}: {_money(s.amount)} in "
+          f"{pd.Timestamp(s.month):%b %Y} (typical month {_money(s.median)})"
+          for s in spikes.itertuples(index=False)],
         "",
         "## What a review would be worth (illustrative)",
         "",

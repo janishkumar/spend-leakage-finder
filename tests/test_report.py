@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from leakage.report import RoiAssumptions, review_set, roi, sensitivity
+from leakage.report import RoiAssumptions, public_name, review_set, roi, sensitivity
 
 
 @pytest.fixture
@@ -33,3 +33,10 @@ def test_roi_math(queue):
 def test_sensitivity_is_monotonic(queue):
     s = sensitivity(queue, RoiAssumptions(top_k=10))
     assert s["est_recoverable"].is_monotonic_increasing
+
+
+def test_public_name_masks_individuals_only():
+    assert public_name("KELLY MCGOWAN") == "[individual payee]"
+    assert public_name("NARUMANCHI, RAVI") == "[individual payee]"
+    assert public_name("CORE MECHANICAL INC") == "CORE MECHANICAL INC"
+    assert public_name("CHICAGO HEARING SOCIETY") == "CHICAGO HEARING SOCIETY"
